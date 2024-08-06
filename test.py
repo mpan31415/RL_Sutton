@@ -1,5 +1,7 @@
-from numpy import argmax
+lst = [1, 2, 3]
 
-lst = [1, 2, 4, 4, 3]
-n = argmax(lst)
-print(n)
+lst2 = lst.insert(0, -1)
+
+print(lst2)
+
+lst.insert()
