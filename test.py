@@ -1,7 +1,5 @@
-lst = [1, 2, 3]
+import numpy as np
 
-lst2 = lst.insert(0, -1)
-
-print(lst2)
-
-lst.insert()
+arr = np.array([1, 2, 3, 2, 1])
+s = np.max(arr)
+print(s)
