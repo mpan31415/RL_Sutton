@@ -15,22 +15,16 @@ class Maze:
         self.goal_pos = (self.height-1, self.width-1)
         
         # set obstacle cells
-        self.board[1, :2] = -1
-        self.board[3, 6:] = -1
+        self.board[1, :4] = -1
+        self.board[3, 4:] = -1
         self.obstacles = self.get_obstacle_positions()
         
         
     def step(self, curr_pos, action):
         # compute next position
-        next_pos = (curr_pos[0]+action[0], curr_pos[1]+action[1])
-        feasible = False
-        # check bounds
-        if -1<next_pos[0]<self.height and -1<next_pos[1]<self.width:
-            # check obstacles
-            if next_pos not in self.obstacles:
-                feasible = True
+        next_pos = self.add_tuples(curr_pos, action)
         # compute reward and return reward and next state
-        if feasible:
+        if self.is_feasible_pos(next_pos):
             # check goal state
             if next_pos == self.goal_pos:
                 return 1, next_pos
@@ -38,6 +32,17 @@ class Maze:
             return 0, next_pos
         else:
             return -1, curr_pos
+        
+    
+    ###### helper functions ######
+    def is_feasible_pos(self, pos):
+        feasible = False
+        # check bounds
+        if -1<pos[0]<self.height and -1<pos[1]<self.width:
+            # check obstacles
+            if pos not in self.obstacles:
+                feasible = True
+        return feasible
     
     def get_obstacle_positions(self):
         obstacles = []
@@ -46,6 +51,9 @@ class Maze:
                 if self.board[i, j] == -1:
                     obstacles.append((i, j))
         return obstacles
+    
+    def add_tuples(self, a:tuple, b:tuple):
+        return (a[0]+b[0], a[1]+b[1])
         
     def display(self):
         c = 65
