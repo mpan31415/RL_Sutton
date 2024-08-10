@@ -15,8 +15,8 @@ class Maze:
         self.goal_pos = (self.height-1, self.width-1)
         
         # set obstacle cells
-        self.board[1, :4] = -1
-        self.board[3, 4:] = -1
+        self.board[1, :6] = -1
+        self.board[3, 2:] = -1
         self.obstacles = self.get_obstacle_positions()
         
         

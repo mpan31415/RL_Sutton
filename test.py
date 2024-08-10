@@ -1,7 +1,8 @@
-import numpy as np
+from random import choice, sample
 
-arr = np.zeros((3, 3, 3))
-print(arr)
+a = [[1,2],[3,4]]
 
-arr[0, 0, :] = [1, 0, 0]
-print(arr)
+[x, y] = a[0]
+
+print(x)
+print(y)

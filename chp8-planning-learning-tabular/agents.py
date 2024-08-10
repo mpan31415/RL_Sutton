@@ -1,6 +1,6 @@
 from maze_engine import Maze
 import numpy as np
-from random import choice
+from random import choice, sample
 from scipy.stats import bernoulli
 from time import sleep
 
@@ -129,14 +129,14 @@ class QAgent:
 ##########################################  
 class DynaQ:
     
-    def __init__(self, alpha, gamma, epsilon, epsilon_scaling, num_episode, num_planning_iters) -> None:
+    def __init__(self, alpha, gamma, epsilon, epsilon_scaling, num_episodes, num_planning_iters) -> None:
         
         self.maze = Maze()
         self.actions = [(-1,0), (0,1), (1,0), (0,-1)]    # up, right, down, left
         self.action_values = np.zeros((self.maze.height, self.maze.width, len(self.actions)))
         
         # for each state, for each action, the model maps to [reward, next_pos[0], next_pos[1]]
-        self.model = np.zeros((self.maze.height, self.maze.width, len(self.actions), 3))
+        self.model = np.zeros((self.maze.height, self.maze.width, len(self.actions), 3), dtype=int)
         
         self.alpha = alpha
         self.gamma = gamma
@@ -145,18 +145,39 @@ class DynaQ:
         self.epsilon_scaling = epsilon_scaling
         self.target_epsilon = epsilon
         
-        self.num_episode = num_episode
+        self.num_episodes = num_episodes
         self.num_planning_iters = num_planning_iters
         
-        self.observed_state_actions = []       # list of tuples = (pos[0], pos[1], action_idx)
+        self.observed_state_actions = set()      # set of tuples = (pos[0], pos[1], action_idx)
         
     
     def learn(self):
         # self.curr_pos = (0, 0)
-        for episode_num in range(1, self.num_episode+1):
+        for episode_num in range(1, self.num_episodes+1):
             self.episode(episode_num)
         print()
         self.print_action_values()
+        
+        
+    def act(self):
+        self.curr_epsilon = 0
+        curr_pos = (0, 0)
+        self.print_action_values(show_curr_pos=True, curr_pos=curr_pos)
+        while curr_pos != self.maze.goal_pos:
+            # select action according to e-greedy policy
+            action_idx, action = self.get_action(curr_pos)
+            # get reward and next state from environment
+            reward, next_pos = self.maze.step(curr_pos, action)
+            # advance to next position
+            curr_pos = next_pos
+            
+            # delay and print current board
+            sleep(1)
+            self.print_action_values(show_curr_pos=True, curr_pos=curr_pos)
+            print("="*50)
+        
+        print("="*50)
+        print("Finished this round!")
         
         
         
@@ -174,21 +195,28 @@ class DynaQ:
             err = reward + self.gamma*np.max(self.action_values[next_pos[0],next_pos[1],:]) - self.action_values[curr_pos[0],curr_pos[1],action_idx]
             self.action_values[curr_pos[0],curr_pos[1],action_idx] += self.alpha * err
             
+            # add to experience set
+            self.observed_state_actions.add((curr_pos[0], curr_pos[1], action_idx))
+            
             # planning
             # update model
             self.model[curr_pos[0], curr_pos[1], action_idx] = [reward, next_pos[0], next_pos[1]]
-            # loop planning
+            # planning loop
             for planning_iter in range(1, self.num_planning_iters+1):
-                pass
-            
-            
+                # randomly sample previously observed state and action taken from that state
+                (x, y, act) = sample(sorted(self.observed_state_actions), 1)[0]
+                # simulate experience using model
+                [r, next_x, next_y] = self.model[x, y, act]
+                # perform q-learning update
+                err = r + self.gamma*np.max(self.action_values[next_x,next_y,:]) - self.action_values[x,y,act]
+                self.action_values[x,y,act] += self.alpha * err
+                
             # advance to next position
             curr_pos = next_pos
             
-            
-            step_counter += 1
-            if step_counter % 1000 == 0:
-                print("step = %d" % step_counter)
+            # step_counter += 1
+            # if step_counter % 10000 == 0:
+            #     print("step = %d" % step_counter)
         
         # print("="*50)
         # print("Finished episode #%d" % episode_num)
@@ -259,8 +287,10 @@ if __name__ == "__main__":
     
     num_episodes = 50
     
+    num_planning_iters = 3
+    
     # q_agent = QAgent(alpha, gamma, epsilon, epsilon_scaling, num_episodes)
     # q_agent.learn()
     
-    dynaq_agent = DynaQ(alpha, gamma, epsilon, epsilon_scaling, num_episodes)
+    dynaq_agent = DynaQ(alpha, gamma, epsilon, epsilon_scaling, num_episodes, num_planning_iters)
     dynaq_agent.learn()
