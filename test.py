@@ -10,6 +10,13 @@ arr = np.array([[4, 8, 3, 9, 2, 1, 6, 5, 7],
                 [3, 7, 2, 6, 8, 9, 5, 1, 4],
                 [8, 1, 4, 2, 5, 3, 7, 6, 9],
                 [6, 9, 5, 4, 1, 7, 3, 8, 2]])
+print(arr)
 
 res = is_complete(arr)
 print(res)
+
+a = np.diag([3, 3, 3])
+print(a)
+
+b = np.array([1, 2, 3])
+print(a@b)
