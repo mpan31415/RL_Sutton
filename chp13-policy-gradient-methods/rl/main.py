@@ -18,7 +18,8 @@ if __name__ == "__main__":
     total_sim_time = 10    # [seconds]
     while env.get_state().t < total_sim_time:
         state = env.get_state()
-        action = agent.get_action(state)
+        # action = agent.get_action(state)
+        action = agent.get_random_action(state)
         env.step(action)
     
     # simulation finished, display animation
