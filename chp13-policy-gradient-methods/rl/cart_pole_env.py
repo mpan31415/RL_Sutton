@@ -10,6 +10,7 @@ import matplotlib.patches as ptch
 #################################################################
 
 
+##########################################
 class State:
     def __init__(self, t, x, v, a, theta, omega, alpha) -> None:
         self.t = t
@@ -19,7 +20,20 @@ class State:
         self.theta = theta
         self.omega = omega
         self.alpha = alpha
+        
 
+##########################################
+class ActionSpace:
+    def __init__(self, lower, upper, dim) -> None:
+        self.lower_bound = lower
+        self.upper_bound = upper
+        self.dim = 1
+        self.rng = np.random.default_rng()
+        
+    def sample(self):
+        # return self.rng.uniform(self.lower_bound, self.upper_bound)
+        return np.array([self.rng.uniform(self.lower_bound, self.upper_bound)])
+    
 
 ##########################################
 class CartPoleEnv:
@@ -50,6 +64,11 @@ class CartPoleEnv:
         # reset (re-initilialize) env
         self.reset()
         
+        # constants, for reinforcement learning algorithms
+        self.observation_dim = 4         # [x, v, theta, omega]
+        self.action_space = ActionSpace(lower=-50, upper=50, dim=1)
+        self.max_episode_steps = 1000
+        
         
     ##########################################
     def reset(self):
@@ -73,7 +92,9 @@ class CartPoleEnv:
         #     'omega': self._omega0,
         #     'alpha': 0
         # }
-        self._state = State(0, self._x0, self._v0, 0, self._theta0, self._omega0, 0)
+        # self._state = State(0, self._x0, self._v0, 0, self._theta0, self._omega0, 0)
+        
+        self._state = np.array([self._x0, self._v0, self._theta0, self._omega0])
         
         # variables for the states during simulation (initalized with initial conditions)
         self._t = 0
@@ -82,13 +103,13 @@ class CartPoleEnv:
         
         
     ##########################################
-    def step(self, input):
+    def step(self, action):
             
         # forward Euler method for numerical integration of the ODE
         self._t += self._dt
         
-        # get input
-        F = input
+        # get action
+        F = action[0]
         
         # compute accelerations
         A = np.array([[self._m1+self._m2, self._m2*self._L*np.cos(self._theta)], [np.cos(self._theta), self._L]])
@@ -112,7 +133,8 @@ class CartPoleEnv:
         self._alphas.append(self._alpha)
         
         # update current state dictionary
-        self._state = State(self._t, self._x, self._v, self._a, self._theta, self._omega, self._alpha)
+        # self._state = State(self._t, self._x, self._v, self._a, self._theta, self._omega, self._alpha)
+        self._state = np.array([self._x, self._v, self._theta, self._omega])
         
         # self._state['t'] = self._t
         # self._state['x'] = self._x
@@ -122,16 +144,46 @@ class CartPoleEnv:
         # self._state['omega'] = self._omega
         # self._state['alpha'] = self._alpha
         
+        return self.get_state(), self.get_reward(), self.is_terminal()
+    
+    ##########################################
+    def is_terminal(self):
+        # terminal state reached in 2 cases:
+        # 1. pendulum upwards and relatively stable
+        # 2. 3 second time reached
+        s = self.get_state()
+        theta = s[2]
+        # if abs(theta - np.radians(180))<np.radians(10) or self.get_sim_time() > 3:
+        #     return True
+        if self.get_sim_time() > 5:
+            return True
+        return False
+        
+    ##########################################
+    def get_reward(self):
+        # compute the reward for pendulum swing up
+        # assign higher reward for pendulum being closer to the upward position, and slower angular vel
+        s = self.get_state()
+        theta_weight = 1
+        omega_weight = 1
+        theta = s[2]
+        omega = s[3]
+        theta_diff = abs(theta - np.radians(180))
+        omega_diff = abs(omega)
+        r = -(theta_weight*theta_diff + omega_weight*omega_diff)
+        return r
     
     ##########################################
     def get_state(self):
         return self._state
     
-    
     ##########################################
     def get_constants(self):
         return self._const
     
+    ##########################################
+    def get_sim_time(self):
+        return self._t
         
     ##########################################
     def animate(self):
@@ -143,6 +195,7 @@ class CartPoleEnv:
         
         # compute number of time steps simulated
         self.num_steps = len(self._xs)
+        # print("num_steps = %d" % self.num_steps)
         
         # Initialize the animation plot. Make the aspect ratio equal so it looks right.
         fig = plt.figure()
@@ -166,6 +219,7 @@ class CartPoleEnv:
         # define the callable animation function
         steps_per_second = int(1/self._dt)
         def animate_func(i):
+            # print("inside animate func")
             if i%steps_per_second==0 and i>0:
                 print("animation wall time = %d seconds" % int(i/steps_per_second))
             # get the recorded positions at timestep i
@@ -202,15 +256,15 @@ if __name__ == "__main__":
     rod_length = 1
     total_time = 10
     
-    # define the force function
-    def force_func(sys:CartPoleEnv):
-        t = sys.get_state().t
-        return 5*np.sin(5*t)
+    # # define the force function
+    # def force_func(env:CartPoleEnv):
+    #     t = env.get_sim_time()
+    #     return 15*np.sin(5*t)
     
-    sys = CartPoleEnv(cart_mass, bob_mass, rod_length)
+    env = CartPoleEnv(cart_mass, bob_mass, rod_length)
     
-    while sys.get_state().t < total_time:
-        cont_input = force_func(sys)
-        sys.step(cont_input)
+    while env.get_sim_time() < total_time:
+        cont_input = env.action_space.sample()
+        env.step(cont_input)
     
-    sys.animate()
+    env.animate()

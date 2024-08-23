@@ -56,7 +56,7 @@ if __name__ == "__main__":
             # print(force)
             control_history.append(1)
             
-        # print("force = ",force)
+        print("force = ",force)
         return force
     
     # system = CartPole(cart_mass, bob_mass, rod_length, total_time, force_func, theta0=np.radians(162))

@@ -58,19 +58,33 @@ class Double_Q_Critic(nn.Module):
 
 
 def evaluate_policy(env, agent, turns = 3):
+    
     total_scores = 0
     for j in range(turns):
-        s, info = env.reset()
+        env.reset()
+        s = env.get_state()
         done = False
         while not done:
             # Take deterministic actions at test time
             a = agent.select_action(s, deterministic=True)
-            s_next, r, dw, tr, info = env.step(a)
-            done = (dw or tr)
+            s_next, r, done = env.step(a)
 
             total_scores += r
             s = s_next
+            
     return int(total_scores/turns)
+
+
+def animate_policy(env, agent):
+    
+    env.reset()
+    while env.get_sim_time() < 10:
+        # Take deterministic actions at test time
+        a = agent.select_action(env.get_state(), deterministic=True)
+        env.step(a)
+        
+    env.animate()
+    
 
 
 #Just ignore this function~
@@ -84,6 +98,7 @@ def str2bool(v):
         return False
     else:
         raise argparse.ArgumentTypeError('Boolean value expected.')
+
 
 #reward engineering for better training
 def Reward_adapter(r, EnvIdex):

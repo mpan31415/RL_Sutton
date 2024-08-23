@@ -3,6 +3,7 @@ import torch.nn.functional as F
 import numpy as np
 import torch
 import copy
+from cart_pole_env import State
 
 
 class TD3_agent():
@@ -37,7 +38,7 @@ class TD3_agent():
 	def train(self):
 		self.delay_counter += 1
 		with torch.no_grad():
-			s, a, r, s_next, dw = self.replay_buffer.sample(self.batch_size)
+			s, a, r, s_next, done = self.replay_buffer.sample(self.batch_size)
 
 			# Compute the target Q
 			target_a_noise = (torch.randn_like(a) * self.policy_noise).clamp(-self.noise_clip, self.noise_clip)
@@ -46,7 +47,7 @@ class TD3_agent():
 			target_Q1, target_Q2 = self.q_critic_target(s_next, smoothed_target_a)
 			'''↓↓↓ Clipped Double Q-learning ↓↓↓'''
 			target_Q = torch.min(target_Q1, target_Q2)
-			target_Q = r + (~dw) * self.gamma * target_Q  #dw: die or win
+			target_Q = r + (~done) * self.gamma * target_Q  #dw: die or win
 
 		# Get current Q estimates
 		current_Q1, current_Q2 = self.q_critic(s, a)
@@ -95,21 +96,21 @@ class ReplayBuffer():
 		self.a = torch.zeros((max_size, action_dim) ,dtype=torch.float,device=self.dvc)
 		self.r = torch.zeros((max_size, 1) ,dtype=torch.float,device=self.dvc)
 		self.s_next = torch.zeros((max_size, state_dim) ,dtype=torch.float,device=self.dvc)
-		self.dw = torch.zeros((max_size, 1) ,dtype=torch.bool,device=self.dvc)
+		self.done = torch.zeros((max_size, 1) ,dtype=torch.bool,device=self.dvc)
 
-	def add(self, s, a, r, s_next, dw):
+	def add(self, s, a, r, s_next, done):
 		#每次只放入一个时刻的数据
 		self.s[self.ptr] = torch.from_numpy(s).to(self.dvc)
 		self.a[self.ptr] = torch.from_numpy(a).to(self.dvc) # Note that a is numpy.array
 		self.r[self.ptr] = r
 		self.s_next[self.ptr] = torch.from_numpy(s_next).to(self.dvc)
-		self.dw[self.ptr] = dw
+		self.done[self.ptr] = done
 
 		self.ptr = (self.ptr + 1) % self.max_size #存满了又重头开始存
 		self.size = min(self.size + 1, self.max_size)
 
 	def sample(self, batch_size):
 		ind = torch.randint(0, self.size, device=self.dvc, size=(batch_size,))
-		return self.s[ind], self.a[ind], self.r[ind], self.s_next[ind], self.dw[ind]
+		return self.s[ind], self.a[ind], self.r[ind], self.s_next[ind], self.done[ind]
 
 
