@@ -77,7 +77,7 @@ def evaluate_policy(env, agent, turns = 3):
 
 def animate_policy(env, agent):
     
-    env.reset()
+    env.reset(rand=False)
     while env.get_sim_time() < 10:
         # Take deterministic actions at test time
         a = agent.select_action(env.get_state(), deterministic=True)

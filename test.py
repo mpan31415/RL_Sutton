@@ -1,8 +1,7 @@
-import numpy as np
 
-rng = np.random.default_rng()
 
-n = np.array([rng.uniform(-1, 1)])
-print(n)
-print(type(n))
-print(n.shape)
+n = -0.5
+
+res = 1 if n>0 else -1
+
+print(res)

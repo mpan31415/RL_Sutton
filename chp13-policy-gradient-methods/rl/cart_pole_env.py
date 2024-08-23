@@ -66,14 +66,20 @@ class CartPoleEnv:
         
         # constants, for reinforcement learning algorithms
         self.observation_dim = 4         # [x, v, theta, omega]
-        self.action_space = ActionSpace(lower=-50, upper=50, dim=1)
+        self.action_space = ActionSpace(lower=-1, upper=1, dim=1)
+        self.force = 5                   # [Newtons]
         self.max_episode_steps = 1000
         
         
     ##########################################
-    def reset(self):
+    def reset(self, dir="up", rand=True):
         
         # memory for all past states
+        if rand:
+            if dir=="up":
+                self._theta0 = np.radians(180 + np.random.uniform(-10, 10))
+            else:
+                self._theta0 = np.radians(np.random.uniform(-10, 10))
         self._xs, self._vs, self._as = [self._x0], [self._v0], [0]
         self._thetas, self._omegas, self._alphas = [self._theta0], [self._omega0], [0]
         
@@ -83,16 +89,6 @@ class CartPoleEnv:
             'm2': self._m2,
             'L': self._L
         }
-        # self._state = {
-        #     't': 0,
-        #     'x': self._x0,
-        #     'v': self._v0,
-        #     'a': 0,
-        #     'theta': self._theta0,
-        #     'omega': self._omega0,
-        #     'alpha': 0
-        # }
-        # self._state = State(0, self._x0, self._v0, 0, self._theta0, self._omega0, 0)
         
         self._state = np.array([self._x0, self._v0, self._theta0, self._omega0])
         
@@ -108,8 +104,9 @@ class CartPoleEnv:
         # forward Euler method for numerical integration of the ODE
         self._t += self._dt
         
-        # get action
-        F = action[0]
+        # get action, and convert to left (-1) / right (1) moves
+        dir = 1 if action[0] > 0 else -1
+        F = self.force * dir
         
         # compute accelerations
         A = np.array([[self._m1+self._m2, self._m2*self._L*np.cos(self._theta)], [np.cos(self._theta), self._L]])
@@ -136,42 +133,39 @@ class CartPoleEnv:
         # self._state = State(self._t, self._x, self._v, self._a, self._theta, self._omega, self._alpha)
         self._state = np.array([self._x, self._v, self._theta, self._omega])
         
-        # self._state['t'] = self._t
-        # self._state['x'] = self._x
-        # self._state['v'] = self._v
-        # self._state['a'] = self._a
-        # self._state['theta'] = self._theta
-        # self._state['omega'] = self._omega
-        # self._state['alpha'] = self._alpha
-        
         return self.get_state(), self.get_reward(), self.is_terminal()
     
     ##########################################
     def is_terminal(self):
-        # terminal state reached in 2 cases:
-        # 1. pendulum upwards and relatively stable
-        # 2. 3 second time reached
+        # terminal state reached in 3 cases:
+        # 1. theta > 15 degrees
+        # 2. cart position > 5
+        # 3. time > 5 seconds
         s = self.get_state()
-        theta = s[2]
-        # if abs(theta - np.radians(180))<np.radians(10) or self.get_sim_time() > 3:
-        #     return True
-        if self.get_sim_time() > 5:
+        x = abs(s[0])
+        theta_err = abs(np.degrees(s[2]) - 180)
+        time = self._t
+        if theta_err > 15 or x > 5 or time > 5:
             return True
         return False
         
     ##########################################
     def get_reward(self):
-        # compute the reward for pendulum swing up
-        # assign higher reward for pendulum being closer to the upward position, and slower angular vel
-        s = self.get_state()
-        theta_weight = 1
-        omega_weight = 1
-        theta = s[2]
-        omega = s[3]
-        theta_diff = abs(theta - np.radians(180))
-        omega_diff = abs(omega)
-        r = -(theta_weight*theta_diff + omega_weight*omega_diff)
-        return r
+        
+        reward = 1
+        
+        # s = self.get_state()
+        # theta_deg = np.degrees(s[2])
+        # omega_deg = np.degrees(s[3])
+        
+        # costs = (theta_deg-180)**2 + 0.1*np.degrees(omega_deg)**2
+        # reward = -costs
+        
+        # reward = 1
+        # if abs(theta_deg) > 15:
+        #     reward = -1
+        
+        return reward
     
     ##########################################
     def get_state(self):
