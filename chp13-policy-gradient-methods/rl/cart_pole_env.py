@@ -27,7 +27,7 @@ class ActionSpace:
     def __init__(self, lower, upper, dim) -> None:
         self.lower_bound = lower
         self.upper_bound = upper
-        self.dim = 1
+        self.dim = dim
         self.rng = np.random.default_rng()
         
     def sample(self):
@@ -39,7 +39,7 @@ class ActionSpace:
 class CartPoleEnv:
     
     def __init__(self, cart_mass, bob_mass, rod_length,
-                 dt=0.01, x0=0, v0=0, theta0=np.radians(0), omega0=0, loop_animation=False):
+                 dt=0.01, x0=0, v0=0, theta0=np.radians(0), omega0=0, loop_animation=False, rand_start=True):
         
         # constants
         self._m1 = cart_mass
@@ -62,7 +62,7 @@ class CartPoleEnv:
         self._theta0, self._omega0 = theta0, omega0        # pendulum angular position and velocity
         
         # reset (re-initilialize) env
-        self.reset()
+        self.reset(rand=rand_start)
         
         # constants, for reinforcement learning algorithms
         self.observation_dim = 4         # [x, v, theta, omega]

@@ -47,7 +47,7 @@ if __name__ == "__main__":
 #                       x0=5, theta0=np.radians(180))
 #     env_name = "CartPole"
     
-    env = CartPoleEnv(cart_mass, bob_mass, rod_length, theta0=np.radians(200))
+    env = CartPoleEnv(cart_mass, bob_mass, rod_length, theta0=np.radians(200), rand_start=False)
     env_name = "CartPoleUp"
     
     opt.state_dim = env.observation_dim
