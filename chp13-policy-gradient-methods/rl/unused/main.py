@@ -1,8 +1,8 @@
-from cart_pole_env import CartPoleEnv
+from envs.cart_pole_env import CartPoleEnv
 
 from utils import str2bool, evaluate_policy, animate_policy
 from datetime import datetime
-from td3 import TD3_agent
+from agents.td3 import TD3_agent
 import numpy as np
 import os, shutil
 import argparse
@@ -79,7 +79,7 @@ def main():
         writer = SummaryWriter(log_dir=writepath)
 
     # Build DRL model
-    if not os.path.exists('model'): os.mkdir('model')
+    # if not os.path.exists('models'): os.mkdir('models')
     agent = TD3_agent(**vars(opt)) # var: transfer argparse to dictionary
     if opt.Loadmodel: agent.load(env_name, opt.ModelIdex)
 
